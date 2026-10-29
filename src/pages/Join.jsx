@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { trip } from '../data.js'
-import { Logo } from '../components/ui.jsx'
-import { useTraveler } from '../state.jsx'
+import { Link, useNavigate } from 'react-router-dom'
+import { ErrorText, Logo } from '../components/ui.jsx'
+import { useApp } from '../state.jsx'
 
 const AVATARS = { Alex: '#4A7A86', Priya: '#8B61B8', Jamie: '#5A7796', Dev: '#A84E14' }
 
@@ -17,20 +16,8 @@ function validate({ name, contact }) {
   return errors
 }
 
-function ErrorText({ id, children }) {
-  return (
-    <p id={id} className="field__error">
-      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M12 7v6M12 17h.01" />
-      </svg>
-      {children}
-    </p>
-  )
-}
-
 export default function Join() {
-  const { profile, setProfile } = useTraveler()
+  const { profile, setProfile, trip } = useApp()
   const [form, setForm] = useState(profile)
   const [errors, setErrors] = useState({})
   const navigate = useNavigate()
@@ -51,7 +38,9 @@ export default function Join() {
     <div className="join-page">
       <div className="join-bg" aria-hidden="true" />
       <main id="main" className="join-card">
-        <Logo />
+        <Link to="/" aria-label="Romi home" className="join-card__logo">
+          <Logo height={44} />
+        </Link>
         <section className="trip-card" aria-labelledby="trip-title">
           <p className="trip-card__invite">
             <span className="pill pill--outline">Invited by</span>
@@ -113,7 +102,7 @@ export default function Join() {
         <p className="center muted">You'll be asked for availability and travel preferences next.</p>
         <hr className="divider" />
         <p className="center">
-          Already have a Romi account? <a href="#/" className="link">Sign in</a>
+          Already have a Romi account? <Link to="/" className="link">Sign in</Link>
         </p>
       </main>
     </div>

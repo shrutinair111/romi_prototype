@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { trip } from '../data.js'
+import { useApp } from '../state.jsx'
 import { Logo, Note } from './ui.jsx'
 
 const STEPS = [
@@ -37,17 +37,18 @@ function Stepper({ current }) {
 }
 
 /**
- * Shared shell for the traveler steps.
+ * Shell for the traveler (Marcus) screens.
  * Desktop: dark sidebar (trip card, group progress, privacy note) + main column.
  * Mobile (<960px): top bar with Back + step count, segmented progress, sticky action bar.
  */
 export default function Layout({ step, progress, backTo, title, actions, children, aside }) {
+  const { trip } = useApp()
   const isStep = typeof step === 'number'
   return (
     <div className="shell">
       <aside className="sidebar" aria-label="Trip summary">
         <Link to="/" className="sidebar__logo" aria-label="Romi home">
-          <Logo onDark />
+          <Logo onDark height={44} />
         </Link>
         <section className="joining" aria-labelledby="joining-label">
           <p id="joining-label" className="eyebrow eyebrow--dark">You're joining</p>
@@ -93,7 +94,7 @@ export default function Layout({ step, progress, backTo, title, actions, childre
             </Link>
           ) : (
             <Link to="/" className="topbar__logo" aria-label="Romi home">
-              <Logo />
+              <Logo height={32} />
             </Link>
           )}
           {isStep && <Stepper current={step} />}

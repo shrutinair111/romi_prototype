@@ -11,16 +11,22 @@ const OPTIONS = [
 ]
 
 export default function Availability() {
-  const { availability, setAvailability } = useTraveler()
+  const { availability, setAvailability, stats, log, notify } = useTraveler()
   const navigate = useNavigate()
   const answered = windows.filter((w) => availability[w.id]).length
   const missing = windows.filter((w) => !availability[w.id]).map((w) => `Window ${w.id}`)
 
+  const submit = () => {
+    log('marcus', 'updated availability')
+    notify('Availability saved. Alex only sees group counts.')
+    navigate('/budget')
+  }
+
   return (
     <Layout
       step={0}
-      backTo="/"
-      progress={{ done: 3, total: 5, label: 'have submitted availability' }}
+      backTo="/join"
+      progress={{ done: stats.dates, total: stats.total, label: 'have submitted availability' }}
       actions={
         <>
           <p className="action-bar__status" aria-live="polite">
@@ -28,8 +34,8 @@ export default function Availability() {
             {missing.length > 0 && ` ${missing.join(' and ')} ${missing.length > 1 ? 'are' : 'is'} still blank, you can submit now and answer later.`}
           </p>
           <div className="action-bar__buttons">
-            <Button to="/" variant="secondary">Back</Button>
-            <Button onClick={() => navigate('/budget')}>Submit &amp; continue →</Button>
+            <Button to="/join" variant="secondary">Back</Button>
+            <Button onClick={submit}>Submit &amp; continue →</Button>
           </div>
         </>
       }

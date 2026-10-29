@@ -46,7 +46,7 @@ function SearchSummary({ prefs }) {
 }
 
 export default function FlightPrefs() {
-  const { prefs, setPrefs } = useTraveler()
+  const { prefs, setPrefs, stats, log, notify } = useTraveler()
   const navigate = useNavigate()
   const toggleCheck = (id) => setPrefs({ ...prefs, checks: { ...prefs.checks, [id]: !prefs.checks[id] } })
 
@@ -54,12 +54,21 @@ export default function FlightPrefs() {
     <Layout
       step={2}
       backTo="/budget"
-      progress={{ done: 2, total: 5, label: 'have set flight preferences' }}
+      progress={{ done: stats.flight, total: stats.total, label: 'have set flight preferences' }}
       aside={<SearchSummary prefs={prefs} />}
       actions={
         <div className="action-bar__buttons">
           <Button to="/budget" variant="secondary">Back</Button>
-          <Button onClick={() => navigate('/approve')}>Finish &amp; submit →</Button>
+          <Button
+            onClick={() => {
+              setPrefs({ ...prefs, saved: true })
+              log('marcus', 'set flight preferences')
+              notify("You're all set. Romi will send your flight for review once Alex picks a package.")
+              navigate('/approve')
+            }}
+          >
+            Finish &amp; submit →
+          </Button>
         </div>
       }
     >

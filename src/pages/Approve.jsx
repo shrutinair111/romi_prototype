@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import Layout from '../components/Layout.jsx'
-import { Button, Dialog, Eyebrow, Toast } from '../components/ui.jsx'
-import { groupArrivals, myFlight as f, trip } from '../data.js'
+import { Button, Dialog, Eyebrow } from '../components/ui.jsx'
+import { groupArrivals, myFlight as f } from '../data.js'
 import { useTraveler } from '../state.jsx'
 
 const START = 6
@@ -10,6 +10,7 @@ const pos = (h) => `${((h - START) / (END - START)) * 100}%`
 const ticks = ['6 AM', '7 AM', '8 AM', '9 AM', '10 AM', '11 AM', 'noon']
 
 function ArrivalCheck() {
+  const { trip } = useTraveler()
   return (
     <section className="arrival-check" aria-labelledby="ac-title">
       <div className="split-head">
@@ -47,6 +48,7 @@ function ArrivalCheck() {
 }
 
 function BoardingPass() {
+  const { trip } = useTraveler()
   return (
     <section className="pass" aria-label={`Your flight: ${f.airline} ${f.number}`}>
       <div className="pass__head">
@@ -88,26 +90,25 @@ function BoardingPass() {
 }
 
 export default function Approve() {
-  const { approval, setApproval } = useTraveler()
+  const { approval, setApproval, notify, log, trip } = useTraveler()
   const [mode, setMode] = useState(null) // 'note' | 'alternative' | null
   const [note, setNote] = useState('')
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const [toast, setToast] = useState(null)
   const backRef = useRef(null)
-  const approvedCount = f.approved + (approval === 'approved' ? 1 : 0)
+  const approvedCount = 2 + (approval === 'approved' ? 1 : 0)
 
   const closeDialog = useCallback(() => setConfirmOpen(false), [])
-  const dismissToast = useCallback(() => setToast(null), [])
 
+  const undo = () => {
+    setApproval(null)
+    notify('Approval undone. Nothing was booked.')
+  }
   const confirm = () => {
     setApproval('approved')
     setConfirmOpen(false)
     setMode(null)
-    setToast('Flight approved. You can undo for 10 minutes.')
-  }
-  const undo = () => {
-    setApproval(null)
-    setToast('Approval undone. Nothing was booked.')
+    log('marcus', 'approved their flight')
+    notify('Flight approved. You can undo for 10 minutes.', { actionLabel: 'Undo', onAction: undo })
   }
 
   return (
@@ -130,7 +131,7 @@ export default function Approve() {
             <strong>Alex picked Package A</strong> for the group. Review your flight and respond. Romi books only once
             everyone signs off.
           </p>
-          <p className="muted small">10 min ago · {f.approved} of 5 have already approved</p>
+          <p className="muted small">10 min ago · 2 of 5 have already approved</p>
         </div>
       </div>
 
@@ -205,7 +206,7 @@ export default function Approve() {
                   Romi will search for flights from AUS that land between <strong>{f.groupWindow.label}</strong> and stay under
                   your private budget. Alex gets your suggestion without seeing your budget.
                 </p>
-                <Button variant="secondary" onClick={() => setToast('Searching alternatives. We will notify you when options are ready.')}>
+                <Button variant="secondary" onClick={() => notify('Searching alternatives. We will notify you when options are ready.')}>
                   Search alternatives
                 </Button>
               </div>
@@ -245,7 +246,6 @@ export default function Approve() {
         </div>
       </Dialog>
 
-      <Toast message={toast} actionLabel={approval === 'approved' && toast?.startsWith('Flight approved') ? 'Undo' : null} onAction={undo} onDismiss={dismissToast} />
     </Layout>
   )
 }

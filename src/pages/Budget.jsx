@@ -2,42 +2,59 @@ import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout.jsx'
 import { Button, Eyebrow, Note } from '../components/ui.jsx'
 import { breakdown, budgetLimits, presets } from '../data.js'
-import { useTraveler } from '../state.jsx'
+import { useApp } from '../state.jsx'
 
-const fmt = (n) => (n >= 2500 ? '$2,500+' : `$${n.toLocaleString('en-US')}`)
+const fmt = (n) => `$${n.toLocaleString('en-US')}`
+const round10 = (n) => Math.round(n / 10) * 10
 
 export default function Budget() {
-  const { budget, setBudget } = useTraveler()
+  const { budget, setBudget, stats, log, notify } = useApp()
   const navigate = useNavigate()
   const { min, max, step } = budgetLimits
   const pct = (v) => ((v - min) / (max - min)) * 100
+  const noLimit = budget.preset === 'flexible'
 
   // Dragging a slider always switches to a custom range (audit fix H7):
   // the preset and the slider can never disagree.
-  const setMin = (v) => setBudget({ ...budget, min: Math.min(v, budget.max - step), preset: 'custom', skipped: false })
-  const setMax = (v) => setBudget({ ...budget, max: Math.max(v, budget.min + step), preset: 'custom', skipped: false })
-  const pickPreset = (p) => setBudget({ min: p.min, max: p.max, preset: p.id, skipped: false })
+  const setMin = (v) => setBudget({ ...budget, min: Math.min(v, budget.max - step), preset: 'custom' })
+  const setMax = (v) => setBudget({ ...budget, max: Math.max(v, budget.min + step), preset: 'custom' })
+  const pickPreset = (p) => setBudget({ ...budget, min: p.min, max: p.max, preset: p.id })
   const presetLabel = presets.find((p) => p.id === budget.preset)?.label
+
+  // The estimate is the traveler's own range split by typical Barcelona-in-March shares,
+  // so it moves with the slider. Bars show each category against the largest possible budget.
+  const rows = breakdown.map((b) => {
+    const low = round10(budget.min * b.share)
+    const high = round10(budget.max * b.share)
+    const mid = (low + high) / 2
+    return { ...b, low, high, fill: Math.max(4, (mid / (max * b.share)) * 100) }
+  })
+  const label = (r) => (noLimit ? `${fmt(r.low)}+` : `${fmt(r.low)}–${fmt(r.high).slice(1)}`)
+
+  const save = () => {
+    setBudget({ ...budget, saved: true, skipped: false })
+    log('marcus', 'set a private budget')
+    notify('Budget saved. No one in the group can see your number.')
+    navigate('/flight-preferences')
+  }
+  const skip = () => {
+    setBudget({ ...budget, skipped: true, saved: false })
+    navigate('/flight-preferences')
+  }
 
   return (
     <Layout
       step={1}
       backTo="/availability"
-      progress={{ done: 2, total: 5, label: 'have submitted a budget' }}
+      progress={{ done: stats.budgetDone, total: stats.total, label: 'have submitted a budget' }}
       actions={
         <>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setBudget({ ...budget, skipped: true })
-              navigate('/flight-preferences')
-            }}
-          >
+          <Button variant="ghost" onClick={skip}>
             Skip for now
           </Button>
           <div className="action-bar__buttons">
             <Button to="/availability" variant="secondary">Back</Button>
-            <Button onClick={() => navigate('/flight-preferences')}>Save budget →</Button>
+            <Button onClick={save}>Save budget →</Button>
           </div>
         </>
       }
@@ -57,13 +74,21 @@ export default function Budget() {
               Your range{budget.preset === 'custom' ? ' · Custom' : presetLabel ? ` · ${presetLabel}` : ''}
             </p>
             <p className="range-card__value" aria-live="polite">
-              {fmt(budget.min)} <span aria-hidden="true">–</span>
-              <span className="sr-only"> to </span> {fmt(budget.max)}
+              {noLimit ? (
+                'No limit'
+              ) : (
+                <>
+                  {fmt(budget.min)} <span aria-hidden="true">–</span>
+                  <span className="sr-only"> to </span> {fmt(budget.max)}
+                </>
+              )}
             </p>
           </div>
-          <p className="range-card__mid">
-            Mid-point <strong>{fmt(Math.round((budget.min + budget.max) / 2 / 50) * 50)}</strong>
-          </p>
+          {!noLimit && (
+            <p className="range-card__mid">
+              Mid-point <strong>{fmt(round10((budget.min + budget.max) / 2))}</strong>
+            </p>
+          )}
         </div>
         <div className="dual-range">
           <div className="dual-range__track" aria-hidden="true">
@@ -102,7 +127,7 @@ export default function Budget() {
             <label key={p.id} className="chip chip--stacked">
               <input type="radio" name="preset" checked={budget.preset === p.id} onChange={() => pickPreset(p)} />
               <span className="chip__label">{p.label}</span>
-              <span className="chip__note">{p.note || `${fmt(p.min)}–${fmt(p.max).replace('$', '')}`}</span>
+              <span className="chip__note">{p.note || `${fmt(p.min)}–${fmt(p.max).slice(1)}`}</span>
             </label>
           ))}
         </div>
@@ -117,20 +142,25 @@ export default function Budget() {
           <p className="muted small">Barcelona, March 2026</p>
         </div>
         <ul className="breakdown">
-          {breakdown.map((b) => (
-            <li key={b.label}>
-              <span>
-                <strong>{b.label}</strong>
-                {b.sub && <span className="muted small"> ({b.sub})</span>}
+          {rows.map((r) => (
+            <li key={r.id}>
+              <span className="breakdown__name">
+                <span className="breakdown__icon" aria-hidden="true">{r.icon}</span>
+                <span>
+                  <strong>{r.label}</strong>
+                  {r.sub && <span className="muted small block">{r.sub}</span>}
+                </span>
               </span>
               <span className="breakdown__bar" aria-hidden="true">
-                <span style={{ width: `${b.share * 100}%` }} />
+                <span style={{ width: `${r.fill}%` }} />
               </span>
-              <strong>{b.range}</strong>
+              <strong>{label(r)}</strong>
             </li>
           ))}
         </ul>
-        <p className="muted small">Estimates based on Barcelona in March. You can update this anytime.</p>
+        <p className="muted small">
+          Based on your range and typical costs for Barcelona in March. Updates as you move the slider.
+        </p>
       </section>
     </Layout>
   )

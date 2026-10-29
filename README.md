@@ -1,8 +1,15 @@
-# Romi · Traveler flow prototype (v2)
+# Romi · Clickable prototype (v3)
 
-A clickable, coded prototype of Romi's traveler flow, built from the v2 Figma file after a WCAG 2.1 AA and Nielsen heuristic audit.
+A clickable, coded prototype of Romi's organizer and traveler flows, built from the v2 Figma file after a WCAG 2.1 AA and Nielsen heuristic audit.
 
-**Flow:** Join trip → Availability → Budget → Flight preferences → Flight approval → Booking confirmation
+| Flow | Screens |
+| --- | --- |
+| A · Organizer onboarding | Welcome → Trip basics → Dates → Add travelers → Planning tools |
+| B · Traveler onboarding | Join → Availability → Budget → Flight preferences |
+| C · Organizer coordination | Travelers → Date heatmap (lock dialog) → Flight packages → Traveler flight approval |
+| D · Command center | Trip overview dashboard |
+
+Open `#/screens` for an index of every screen. Both sides share one live store: answer availability as Marcus and the organizer's date heatmap updates. Refresh to reset. Demo trip code: **BCN2026**.
 
 ## Run it locally (Cursor or any editor)
 
@@ -25,11 +32,14 @@ Turn it on once: repo **Settings → Pages → Source: GitHub Actions**. The sit
 
 | File | What it is |
 | --- | --- |
-| `src/data.js` | Single source of truth for the scenario (dates, windows, Marcus's flight). Change data here, not in screens. |
-| `src/state.jsx` | Keeps the traveler's answers between steps. |
-| `src/components/Layout.jsx` | Desktop sidebar + stepper, mobile top bar + sticky action bar. |
-| `src/components/ui.jsx` | Button, accessible Dialog (focus trap, Esc), Toast with Undo. |
-| `src/pages/*.jsx` | One file per screen. |
+| `src/data.js` | Single source of truth for the scenario (people, date windows, flight packages). Change data here, not in screens. |
+| `src/state.jsx` | One store for both flows; organizer counts are derived from travelers' answers. |
+| `src/components/Layout.jsx` | Traveler shell: sidebar + stepper, mobile top bar + sticky action bar. |
+| `src/components/WizardLayout.jsx` | Create-trip wizard shell with locked/completed steps. |
+| `src/components/OrgLayout.jsx` | Organizer workspace shell: trips sidebar, mobile tab row. |
+| `src/components/ui.jsx` | Logo, Button, accessible Dialog (focus trap, Esc), Toast with Undo, InfoTip, Switch. |
+| `src/components/NudgeDialog.jsx` | Editable nudge preview before anything is sent. |
+| `src/pages/*.jsx`, `src/pages/org/*.jsx` | One file per screen. |
 | `src/index.css` | Design tokens and styles. Every text color passes AA (ratios noted in the tokens). |
 
 ## Accessibility decisions (from the audit)
@@ -43,4 +53,4 @@ Turn it on once: repo **Settings → Pages → Source: GitHub Actions**. The sit
 - **Preset and slider stay in sync (H7):** dragging the budget slider switches to a custom range.
 - **SPA focus management:** each step moves focus to its heading; the dialog returns focus to the button that opened it.
 
-The Romi wordmark is a text placeholder; drop the brand SVG into `src/components/ui.jsx` (`Logo`).
+The Romi logo files in `src/assets/` are exported from the Figma file (light and dark versions).
